@@ -5,40 +5,47 @@ import (
 	"log"
 	"net"
 	"time"
+
+	"github.com/eiannone/keyboard"
 )
+
+func logFatal(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func echoHandler(conn *net.TCPConn) {
 	defer conn.Close()
+
 	for {
-		_, err := io.WriteString(conn, "Socket Connection!!\n")
-		if err != nil {
-			return
-		}
-		time.Sleep(time.Second)
+		// キーボード入力待機
+		_, _, err := keyboard.GetSingleKey()
+		logFatal(err)
+		_, err = io.WriteString(conn, "Socket Connection!!\n")
+		logFatal(err)
+		// time.Sleep(time.Second)
 	}
 }
 
 func main() {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", ":8080")
-	if err != nil {
-		log.Fatal(err)
-	}
+	logFatal(err)
 
 	listener, err := net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
+	logFatal(err)
+
+	err = keyboard.Open()
+	logFatal(err)
+	defer keyboard.Close()
 
 	for {
-		err := listener.SetDeadline(time.Now().Add(time.Second * 10))
-		if err != nil {
-			log.Fatal(err)
-		}
+		// err := listener.SetDeadline(time.Now().Add(time.Second * 10))
+		err := listener.SetDeadline(time.Time{})
+		logFatal(err)
 
 		conn, err := listener.AcceptTCP()
-		if err != nil {
-			log.Fatal(err)
-		}
+		logFatal(err)
 
 		go echoHandler(conn)
 	}
